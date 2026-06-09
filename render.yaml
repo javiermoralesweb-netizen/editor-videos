@@ -2,5 +2,5 @@ services:
   - type: web
     name: editor-videos
     env: python
-    buildCommand: apt-get install -y ffmpeg && pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python app.py
