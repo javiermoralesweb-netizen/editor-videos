@@ -9,18 +9,14 @@ app = Flask(__name__)
 @app.route('/editar', methods=['POST'])
 def editar_video():
     data = request.json
-    file_id = data['file_id']
+    web_content_link = data['web_content_link']
     titulo = data['titulo']
-    token = data['token']
 
-    # Descargar vídeo desde Google Drive
-    url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
-    headers = {"Authorization": f"Bearer {token}"}
-    r = requests.get(url, headers=headers, stream=True)
-
+    # Descargar vídeo desde Google Drive (enlace público)
     input_path = tempfile.mktemp(suffix='.mp4')
     output_path = tempfile.mktemp(suffix='.mp4')
 
+    r = requests.get(web_content_link, stream=True)
     with open(input_path, 'wb') as f:
         for chunk in r.iter_content(chunk_size=8192):
             f.write(chunk)
@@ -42,23 +38,15 @@ def editar_video():
     ]
     subprocess.run(cmd, check=True)
 
-    # Subir vídeo editado a Google Drive
+    # Leer vídeo editado
     with open(output_path, 'rb') as f:
         video_data = f.read()
-
-    upload_url = "https://www.googleapis.com/upload/drive/v3/files?uploadType=media"
-    upload_headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "video/mp4"
-    }
-    upload_r = requests.post(upload_url, headers=upload_headers, data=video_data)
-    new_file_id = upload_r.json()['id']
 
     # Limpiar archivos temporales
     os.remove(input_path)
     os.remove(output_path)
 
-    return jsonify({"file_id": new_file_id})
+    return send_file(output_path, mimetype='video/mp4')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
